@@ -1,0 +1,4 @@
+$ cat .gitignore
+# .gitignore
+
+StudentHelperClient.pro.user

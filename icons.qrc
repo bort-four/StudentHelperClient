@@ -1,0 +1,21 @@
+<RCC>
+    <qresource prefix="/icons">
+        <file>icons/accessories-text-editor.png</file>
+        <file>icons/document-new.png</file>
+        <file>icons/folder-new.png</file>
+        <file>icons/list-add.png</file>
+        <file>icons/list-remove.png</file>
+        <file>icons/printer.png</file>
+        <file>Icons/PrintIcon.png</file>
+        <file>Icons/RotLeftIcon.png</file>
+        <file>Icons/RotRightIcon.png</file>
+        <file>Icons/ScaleMinusIcon.png</file>
+        <file>Icons/ScalePlusIcon.png</file>
+        <file>Icons/SelectAllIcon.png</file>
+        <file>Icons/CancelIcon.png</file>
+        <file>Icons/CompIcon.jpg</file>
+        <file>Icons/CutIcon.png</file>
+        <file>Icons/DeleteIcon.png</file>
+        <file>Icons/DiscolourIcon.bmp</file>
+    </qresource>
+</RCC>
