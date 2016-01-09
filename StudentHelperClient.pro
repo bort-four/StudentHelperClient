@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     filebrowserwidget.cpp \
     printcompositor.cpp \
     printerwidget.cpp \
-    shclientwidget.cpp
+    shclientwidget.cpp \
+    cachingbase.cpp
 
 HEADERS  += mainwindow.h\
         ../StudentHelperServer/shquery.h \
@@ -35,7 +36,8 @@ HEADERS  += mainwindow.h\
     searcherwidget.h \
     printerwidget.h \
     printcompositor.h \
-    shclientwidget.h
+    shclientwidget.h \
+    cachingbase.h
 
 FORMS    += mainwindow.ui \
     filedialog.ui \
