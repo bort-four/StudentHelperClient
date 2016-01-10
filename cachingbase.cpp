@@ -1,25 +1,255 @@
 #include "cachingbase.h"
-#include <QPixmap>
 #include <QTcpSocket>
+#include <QApplication>
 
-
-SHCache::SHCache(StudentHelperContent* content, int max_size)
+SHCache::SHCache(int max_size, StudentHelperContent* content)
 {
-    m_cache.setMaxCost(max_size);
+    m_limit = max_size;
     m_content = content;
+
+    QDir dir(QApplication::applicationDirPath());
+    if(!dir.cd("Cache"))
+    {
+        dir.mkdir("Cache");
+    }
+
+    m_cache_info.setFileName(QApplication::applicationDirPath() + "/Cache/log.txt");
+    m_counter = getRecordsCount();
+    m_id_counter = getMaxID();
+
+    /*
+    QFile a(QApplication::applicationDirPath() + "/Cache/test_output.txt");
+    a.open(QIODevice::Append);
+    QTextStream ss(&a);
+    ss << m_counter << "\r\n";
+    ss << m_id_counter << "\r\n";
+    a.close();
+    */
 }
 
-
-File* SHCache::getFile(const File* file, FrameReader& reader)
+int SHCache::getRecordsCount()
 {
-    quint64 id = m_content->getFileId(file);
-
-    if (m_cache.contains(file->getFullName()))
+    int counter = 0;
+    m_cache_info.open(QIODevice::ReadOnly);
+    QTextStream stream(&m_cache_info);
+    while (!stream.atEnd())
     {
-        return m_cache.object(file->getFullName());
+        QString line = stream.readLine();
+        if (!line.isEmpty())
+        {
+            ++counter;
+        }
+    }
+    m_cache_info.close();
+    return counter;
+}
+
+quint64 SHCache::getMaxID()
+{
+    m_cache_info.open(QIODevice::ReadOnly);
+    QTextStream stream(&m_cache_info);
+    QString line;
+    while (!stream.atEnd())
+    {
+        line = stream.readLine();
+    }
+    m_cache_info.close();
+
+    if (line.isEmpty())
+    {
+        return 0;
+    }
+    QTextStream line_stream(&line);
+    quint64 id;
+    line_stream >> id;
+    return id;
+}
+
+int SHCache::contains(const QString& name)
+{
+    m_cache_info.open(QIODevice::ReadOnly);
+    QTextStream stream(&m_cache_info);
+    while (!stream.atEnd())
+    {
+        QString line = stream.readLine();
+        if (line.isEmpty())
+        {
+            continue;
+        }
+        QTextStream line_stream(&line);
+
+        quint64 id;
+        line_stream >> id;
+
+        QString file_name;
+        line_stream >> file_name;
+
+        if (file_name == name)
+        {
+            return id;
+        }
+    }
+    m_cache_info.close();
+    return -1;
+}
+
+QPixmap* SHCache::get(const QString& name)
+{
+    m_cache_info.open(QIODevice::ReadOnly);
+    QTextStream stream(&m_cache_info);
+    while (!stream.atEnd())
+    {
+        QString line = stream.readLine();
+        if (line.isEmpty())
+        {
+            continue;
+        }
+        QTextStream line_stream(&line);
+
+        quint64 file_id;
+        line_stream >> file_id;
+
+        QString file_name;
+        line_stream >> file_name;
+
+        if (file_name == name)
+        {
+            QString format = getFormat(name);
+            QString path = QApplication::applicationDirPath()   +
+                           "/Cache/" + QString::number(file_id) +
+                           "." + format;
+            m_cache_info.close();
+            return new QPixmap(path);
+        }
+    }
+    m_cache_info.close();
+    return NULL;
+}
+
+QString SHCache::getFormat(const QString& name)
+{
+    QString format;
+    int i = name.length() - 1;
+    while(name[i] != '.')
+    {
+        format.push_front(name[i]);
+        --i;
+    }
+    return format;
+}
+
+void SHCache::removeOldest()
+{
+
+    m_cache_info.open(QIODevice::ReadOnly);
+    if (m_cache_info.atEnd())
+    {
+        m_cache_info.close();
+        return;
+    }
+
+    --m_counter;
+
+    QTextStream stream(&m_cache_info);
+
+    QString line = stream.readLine();
+    QTextStream line_stream(&line);
+    quint64 id;
+    QString file_path, pixfile_name;
+    line_stream >> id >> file_path;
+
+    pixfile_name = QApplication::applicationDirPath() + "/Cache/" +
+                   QString::number(id) + "." + getFormat(file_path);
+
+    QFile file(pixfile_name);
+    file.remove();
+
+    QFile new_log(QApplication::applicationDirPath() + "/Cache/temp.txt");
+    new_log.open(QIODevice::Append);
+    QTextStream in_stream(&new_log);
+
+    while (!stream.atEnd())
+    {
+        QString line = stream.readLine();
+        in_stream << line << "\r\n";
+    }
+
+    m_cache_info.close();
+    new_log.close();
+
+    m_cache_info.remove();
+    new_log.copy(QApplication::applicationDirPath() + "/Cache/log.txt");
+    new_log.remove();
+}
+
+void SHCache::newRecord(const QString& name)
+{
+    ++m_counter;
+    ++m_id_counter;
+    m_cache_info.open(QIODevice::Append);
+    QTextStream stream(&m_cache_info);
+    stream << name << "\r\n";
+    m_cache_info.close();
+}
+
+void SHCache::remove(const QString& name)
+{
+    m_cache_info.open(QIODevice::ReadOnly);
+    if (m_cache_info.atEnd())
+    {
+        m_cache_info.close();
+        return;
+    }
+
+    --m_counter;
+
+    QTextStream stream(&m_cache_info);
+
+    QFile new_log(QApplication::applicationDirPath() + "/Cache/temp.txt");
+    new_log.open(QIODevice::Append);
+    QTextStream in_stream(&new_log);
+
+    while (!stream.atEnd())
+    {
+        QString line = stream.readLine();
+        QTextStream data_stream(&line);
+        int id;
+        QString file_path;
+        data_stream >> id >> file_path;
+
+        if (file_path == name)
+        {
+            QString del_name = QApplication::applicationDirPath() +
+                               "/Cache/" + QString::number(id)    +
+                               "." + getFormat(file_path);
+            QFile file(del_name);
+            file.remove();
+        }
+        else
+        {
+            in_stream << line << "\r\n";
+        }
+    }
+
+    m_cache_info.close();
+    new_log.close();
+
+    m_cache_info.remove();
+    new_log.copy(QApplication::applicationDirPath() + "/Cache/log.txt");
+    new_log.remove();
+}
+
+QPixmap* SHCache::getPixmap(const File* file, FrameReader& reader)
+{
+    QPixmap* pix = get(file->getFullName());
+    if (pix != NULL)
+    {
+        return pix;
     }
     else
     {
+        int id = m_content->getFileId(file);
+
         QTcpSocket* socket = const_cast<QTcpSocket*>(reader.getSocketPtr());
 
         // Query to server...
@@ -33,33 +263,29 @@ File* SHCache::getFile(const File* file, FrameReader& reader)
             qDebug() << "Error: Server don't reply to current query";
         }
 
-        // Answer data is already adapted in background slot,
+        // Answer data is already got in background slot,
         // so we just get element of main list.
         File* result_file = m_content->getFileList().at(id);
 
         // Make file copy for cache...
-        File* inserted_file = new File(result_file->getFullName());
-        inserted_file->inputTagsFromString(result_file->getTagString());
-        inserted_file->setPixmap(new QPixmap(result_file->getImage()->copy()));
-        m_cache.insert(result_file->getFullName(), inserted_file);
+        QPixmap* new_record = result_file->getImage();
+        QString format = getFormat(file->getFullName());
+        QString record_name = QApplication::applicationDirPath() +
+                              "/Cache/" + QString::number(m_id_counter) +
+                              "." + format;
+        new_record->save(record_name);
 
-        return result_file;
+        if (m_counter == m_limit)
+        {
+            removeOldest();
+        }
+        newRecord(result_file->getFullName());
+
+        return new QPixmap(record_name);
     }
 }
 
-
-QList<File*> SHCache::getFileList(const QList<File*>& qlist, FrameReader& reader)
-{
-    QList<File*> result;
-    for(QList<File*>::const_iterator it = qlist.begin(); it != qlist.end(); ++it)
-    {
-        result.push_back(SHCache::getFile(*it, reader));
-    }
-    return result;
-}
-
-
-void SHCache::deleteFile(FileItem* file_item, FrameReader& reader)
+void SHCache::deletePixmap(FileItem* file_item, FrameReader& reader)
 {
     const File* file = file_item->getFilePtr();
 
@@ -67,44 +293,18 @@ void SHCache::deleteFile(FileItem* file_item, FrameReader& reader)
     if (file->getLinkCount() == 1)
     {
         // Deleting cache record if there...
-        m_cache.remove(file->getFullName());
+        remove(file->getFullName());
     }
 
     // Deleting file in local storage...
     FolderItem* folder = file_item->getParent();
     folder->removeChild(file_item);
 
-    quint64 id = m_content->getFileId(file);
+    int id = m_content->getFileId(file);
     m_content->getFileList().removeAt(id);
 
     // Query to server...
     SHQContent req;
     req.setFileList(m_content->getFileList());
     reader.writeData(req.toQByteArray());
-}
-
-
-File* SHCache::editFileTags(const File* file, const QString& tag_string, FrameReader& reader)
-{
-    // Editing of cache data if there...
-    if (m_cache.contains(file->getFullName()))
-    {
-        File* cache_file = m_cache.object(file->getFullName());
-        if (cache_file != NULL)
-        {
-            cache_file->inputTagsFromString(tag_string);
-        }
-    }
-
-    // Editing of local data...
-    quint64 id = m_content->getFileId(file);
-    File* edited_file = m_content->getFileList().at(id);
-    edited_file->inputTagsFromString(tag_string);
-
-    // Query to server...
-    SHQContent req;
-    req.setFileList(m_content->getFileList());
-    reader.writeData(req.toQByteArray());
-
-    return edited_file;
 }

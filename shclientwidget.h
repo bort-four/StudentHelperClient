@@ -9,6 +9,7 @@
 #include "filebrowserwidget.h"
 #include "searcherwidget.h"
 #include "printerwidget.h"
+#include "cachingbase.h"
 #include "../StudentHelperServer/studenthelpercontent.h"
 #include "../StudentHelperServer/shquery.h"
 
@@ -44,6 +45,7 @@ private:
     SearcherWidget* _searcherWidget = nullptr;
     PrinterWidget* _printerWidget = nullptr;
     FrameReader _serverReader;
+    SHCache* _shCache;
 };
 
 
