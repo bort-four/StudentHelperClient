@@ -2,10 +2,13 @@
 #include <QTcpSocket>
 #include <QApplication>
 
-SHCache::SHCache(int max_size, StudentHelperContent* content)
+#include <QPushButton>
+
+SHCache::SHCache(int max_size, StudentHelperContent* content, FrameReader* reader)
 {
     m_limit = max_size;
     m_content = content;
+    m_reader = reader;
 
     QDir dir(QApplication::applicationDirPath());
     if(!dir.cd("Cache"))
@@ -14,6 +17,10 @@ SHCache::SHCache(int max_size, StudentHelperContent* content)
     }
 
     m_cache_info.setFileName(QApplication::applicationDirPath() + "/Cache/log.txt");
+
+    m_cache_info.open(QIODevice::WriteOnly);
+    m_cache_info.close();
+
     m_counter = getRecordsCount();
     m_id_counter = getMaxID();
 
@@ -25,6 +32,11 @@ SHCache::SHCache(int max_size, StudentHelperContent* content)
     ss << m_id_counter << "\r\n";
     a.close();
     */
+}
+
+void SHCache::resetReader(FrameReader* new_reader)
+{
+    m_reader = new_reader;
 }
 
 int SHCache::getRecordsCount()
@@ -239,7 +251,7 @@ void SHCache::remove(const QString& name)
     new_log.remove();
 }
 
-QPixmap* SHCache::getPixmap(const File* file, FrameReader& reader)
+QPixmap* SHCache::getPixmap(const File* file)
 {
     QPixmap* pix = get(file->getFullName());
     if (pix != NULL)
@@ -250,12 +262,12 @@ QPixmap* SHCache::getPixmap(const File* file, FrameReader& reader)
     {
         int id = m_content->getFileId(file);
 
-        QTcpSocket* socket = const_cast<QTcpSocket*>(reader.getSocketPtr());
+        QTcpSocket* socket = const_cast<QTcpSocket*>(m_reader->getSocketPtr());
 
         // Query to server...
         SHQImageRequest req;
         req.setFileId(m_content->getFileId(file));
-        reader.writeData(req.toQByteArray());
+        m_reader->writeData(req.toQByteArray());
 
         // Pause for network interacton...
         if (!socket->waitForReadyRead())
@@ -285,7 +297,7 @@ QPixmap* SHCache::getPixmap(const File* file, FrameReader& reader)
     }
 }
 
-void SHCache::deletePixmap(FileItem* file_item, FrameReader& reader)
+void SHCache::deletePixmap(FileItem* file_item)
 {
     const File* file = file_item->getFilePtr();
 
@@ -306,5 +318,5 @@ void SHCache::deletePixmap(FileItem* file_item, FrameReader& reader)
     // Query to server...
     SHQContent req;
     req.setFileList(m_content->getFileList());
-    reader.writeData(req.toQByteArray());
+    m_reader->writeData(req.toQByteArray());
 }

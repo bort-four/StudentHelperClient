@@ -3,8 +3,10 @@
 
 #include <QWidget>
 #include "../StudentHelperServer/studenthelpercontent.h"
+#include "../StudentHelperServer/shquery.h"
 #include <QListWidget>
 #include <QPrinter>
+#include "cachingbase.h"
 
 namespace Ui
 {
@@ -16,7 +18,8 @@ class PrinterWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit PrinterWidget(QWidget *parent = 0, StudentHelperContent* = 0);
+    explicit PrinterWidget(QWidget *parent = 0, StudentHelperContent* = 0,
+                           SHCache* cache = 0);
     ~PrinterWidget();
 
 private:
@@ -53,6 +56,7 @@ private slots:
 private:
     Ui::PrinterWidget *ui;
     StudentHelperContent* helper_data;
+    SHCache* system_cache;
 
     QPixmap* work_pix;
     QPixmap* cut_rect_show_pix;

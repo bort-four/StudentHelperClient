@@ -13,8 +13,7 @@
 // to server database through local cache.
 class SHCache
 {
-//private:
-public:
+private:
     int getRecordsCount();
 
     quint64 getMaxID();
@@ -31,16 +30,18 @@ public:
 
     void remove(const QString& name);
 
-//public:
-    SHCache(int max_size, StudentHelperContent* content);
+public:
+    SHCache(int max_size, StudentHelperContent* content, FrameReader *reader);
 
     // Try to find file in cache, if no then download this file,
     // put it to cache, and return.
-    QPixmap *getPixmap(const File* file, FrameReader& reader);
+    QPixmap *getPixmap(const File* file);
 
     // Delete file from cache if there,
     // and send deliting query to server.
-    void deletePixmap(FileItem *file_item, FrameReader& reader);
+    void deletePixmap(FileItem *file_item);
+
+    void resetReader(FrameReader* new_reader);
 
 private:
 
@@ -55,6 +56,8 @@ private:
 
     // File containing information about stored data.
     QFile m_cache_info;
+
+    FrameReader* m_reader;
 
     // Pointer to object containing metadata of database.
     StudentHelperContent* m_content;

@@ -44,8 +44,8 @@ void SHClientWidget::initiaize()
     ui->printTab->setLayout(new QHBoxLayout);
     ui->printTab->layout()->addWidget(_printerWidget);
 
-//    connect(_browserWidget,     SIGNAL(printRequested(File*)),
-//            _stHelperPtr,       SIGNAL(sendToPrint(File*))   );
+    connect(_browserWidget,     SIGNAL(printRequested(File*)),
+            _shContentPtr,      SIGNAL(sendToPrint(File*))   );
     connect(_browserWidget,     SIGNAL(tagClicked(QString)),
             _searcherWidget,    SLOT(tagSearchInit(QString)) );
     connect(_browserWidget, SIGNAL(tagClicked(QString)),
