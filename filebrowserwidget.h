@@ -207,6 +207,8 @@ private:
 };
 
 
+void clearLayout(QLayout *layoutPtr);
+
 
 
 #endif // FILEBROWSERWIDGET_H

@@ -9,6 +9,7 @@
 #include "filebrowserwidget.h"
 #include "searcherwidget.h"
 #include "printerwidget.h"
+#include "shclientsettings.h"
 #include "../StudentHelperServer/studenthelpercontent.h"
 #include "../StudentHelperServer/shquery.h"
 
@@ -28,22 +29,26 @@ public:
     StudentHelperContent *getSHContentPtr() const;
     void setSHContentPtr(StudentHelperContent *getSHContentPtr);
 
+
 public slots:
     void openSearchTab();
 
 private slots:
     void onCurrFolderChanged();
     void onFrameIsReady();
+    void connectToServer();
+    void onContentEdited();
 
 private:
-    void initiaize();
-
     Ui::SHClientWidget *ui;
     StudentHelperContent* _shContentPtr = nullptr;
     FileBrowserWidget* _browserWidget = nullptr;
     SearcherWidget* _searcherWidget = nullptr;
     PrinterWidget* _printerWidget = nullptr;
+
+    SHClientSettings _settings;
     FrameReader _serverReader;
+
 };
 
 

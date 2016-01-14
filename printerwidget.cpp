@@ -83,7 +83,8 @@ void PrinterWidget::addToQueue(File* fPtr)
         return;
     }
     const QString& name = fPtr->getName();
-    QString path = fPtr->getFullName();
+//    QString path = fPtr->getFullName();
+    QString path = fPtr->getName();
     QListWidget& lst = *ui->print_list;
 
     int item_num = insertToTable(path);

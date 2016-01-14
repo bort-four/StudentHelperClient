@@ -97,9 +97,6 @@
          </property>
          <item>
           <widget class="QToolButton" name="addFileButton">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
            <property name="toolTip">
             <string>Добавить известный файл</string>
            </property>
@@ -114,9 +111,6 @@
          </item>
          <item>
           <widget class="QToolButton" name="addNewFileButton">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
            <property name="toolTip">
             <string>Добавить новый файл</string>
            </property>
@@ -131,9 +125,6 @@
          </item>
          <item>
           <widget class="QToolButton" name="addFolderButton">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
            <property name="toolTip">
             <string>Добавить папку</string>
            </property>

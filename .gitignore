@@ -2,3 +2,11 @@ $ cat .gitignore
 # .gitignore
 
 StudentHelperClient.pro.user
+
+
+for (__uni2i = 0; __uni2i < 100 / 10; ++__uni2i)
+	for (__uni1j = 0; __uni1j < 100 / 10; ++__uni1j)
+		for (__uni0k = 0; __uni0k < 100 / 10; ++__uni0k)
+			for (i = __uni2i * 10; i < (__uni2i + 1) * 10; ++i)
+				for (j = __uni1j * 10; j < (__uni1j + 1) * 10; ++j)
+					for (k = __uni0k * 10; k < (__uni0k + 1) * 10; ++k)

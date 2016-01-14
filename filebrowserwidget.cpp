@@ -4,6 +4,7 @@
 #include <QMouseEvent>
 #include <QFileDialog>
 #include <QDebug>
+#include <QUuid>
 
 #include "filebrowserwidget.h"
 #include "ui_filebrowserwidget.h"
@@ -309,14 +310,6 @@ void FileBrowserWidget::on_addFileButton_clicked()
 void FileBrowserWidget::on_addFolderButton_clicked()
 {
     getCurrFolder()->addChild(new FolderItem("Новая папка", this));
-
-    /*
-    FileTreeWidget *newWg = _widgets[getCurrFolder()->getChildFolderCount() - 1];
-    FolderWidget *newFolderWg = dynamic_cast<FolderWidget *>(newWg);
-
-    if (newFolderWg != NULL)
-        newFolderWg->toggleNameMode(true);
-    */
 }
 
 void FileBrowserWidget::on_addNewFileButton_clicked()
@@ -328,8 +321,20 @@ void FileBrowserWidget::on_addNewFileButton_clicked()
     if (dialog.exec())
         fileNames = dialog.selectedFiles();
 
-    foreach (QString fileName, fileNames)
-        getCurrFolder()->addChild(new FileItem(new File(fileName)));
+    for (auto fileName : fileNames)
+    {
+        File *filePtr = new File(fileName);
+        QFile file(fileName);
+
+        if (file.exists())
+            filePtr->setPixmap(new QPixmap(fileName));
+
+        QString uuid = QUuid::createUuid().toString();
+        uuid = uuid.mid(1, uuid.size() - 2);
+        filePtr->setUuid(uuid);
+
+        getCurrFolder()->addChild(new FileItem(filePtr));
+    }
 }
 
 
@@ -502,7 +507,9 @@ void FileWiget::on_deleteButton_clicked()
                               .arg(getFilePtr()->getName()),
                               QMessageBox::Yes | QMessageBox::No, this);
 
-    dialogPtr->setIconPixmap(*ui->miniatureLabel->pixmap());
+    if (ui->miniatureLabel->pixmap() != nullptr)
+        dialogPtr->setIconPixmap(*ui->miniatureLabel->pixmap());
+
     dialogPtr->setButtonText(QMessageBox::Yes, "Да");
     dialogPtr->setButtonText(QMessageBox::No, "Нет");
 

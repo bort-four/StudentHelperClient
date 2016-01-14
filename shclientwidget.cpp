@@ -16,45 +16,43 @@ SHClientWidget::SHClientWidget(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // conection...
-    QTcpSocket *socketPtr = new QTcpSocket();
-    _serverReader.setSocketPtr(socketPtr);
+    // for settings page
+    connect(ui->cacheSizeSlider,    SIGNAL(valueChanged(int)),
+            ui->cacheSizeSpinBox,   SLOT(setValue(int)));
 
-//    connect(socketPtr,  SIGNAL(readyRead()),
-//            this,       SLOT(onReadyRead()));
+    connect(ui->cacheSizeSpinBox,   SIGNAL(valueChanged(int)),
+            ui->cacheSizeSlider,    SLOT(setValue(int)));
+
+
+    connect(&_settings,     SIGNAL(serverHostChanged(QString)),
+            ui->hostLine,   SLOT(setText(QString)));
+
+    connect(ui->hostLine,   SIGNAL(textChanged(QString)),
+            &_settings,     SLOT(setServerHost(QString)));
+
+
+    connect(&_settings,             SIGNAL(maxCacheSizeChanged(int)),
+            ui->cacheSizeSlider,    SLOT(setValue(int)));
+
+    connect(ui->cacheSizeSlider,    SIGNAL(valueChanged(int)),
+            &_settings,             SLOT(setMaxCacheSize(int)));
+
+
+    connect(ui->connectButton,  SIGNAL(clicked()),
+            this,               SLOT(connectToServer()));
+
+
+    _settings.restoreSettings();
+
+
+    // ////
+    ui->searchTab->setLayout(new QHBoxLayout);
+    ui->printTab->setLayout(new QHBoxLayout);
 
     connect(&_serverReader, SIGNAL(hasReadyFrame()),
             this,           SLOT(onFrameIsReady()));
 
-    socketPtr->connectToHost(QHostAddress("127.0.0.1"), 1234);
-    socketPtr->waitForConnected();
-
-    if (socketPtr->state() != QTcpSocket::ConnectedState)
-        qDebug() << "Connection error:" << socketPtr->errorString();
-}
-
-
-void SHClientWidget::initiaize()
-{
-    _searcherWidget = new SearcherWidget(NULL, _shContentPtr);
-    ui->searchTab->setLayout(new QHBoxLayout);
-    ui->searchTab->layout()->addWidget(_searcherWidget);
-
-    _printerWidget = new PrinterWidget(NULL, _shContentPtr);
-    ui->printTab->setLayout(new QHBoxLayout);
-    ui->printTab->layout()->addWidget(_printerWidget);
-
-//    connect(_browserWidget,     SIGNAL(printRequested(File*)),
-//            _stHelperPtr,       SIGNAL(sendToPrint(File*))   );
-    connect(_browserWidget,     SIGNAL(tagClicked(QString)),
-            _searcherWidget,    SLOT(tagSearchInit(QString)) );
-    connect(_browserWidget, SIGNAL(tagClicked(QString)),
-            this,           SLOT(openSearchTab()) );
-
-    connect(_browserWidget, SIGNAL(currFolderChanged()),
-            this,           SLOT(onCurrFolderChanged()));
-
-    onCurrFolderChanged();
+    connectToServer();
 }
 
 
@@ -70,10 +68,9 @@ void SHClientWidget::openSearchTab()
 }
 
 
+
 void SHClientWidget::onFrameIsReady()
 {
-//    qDebug() << "Frame is ready";
-
     SHQueryBase *queryPtr = nullptr;
     QByteArray data = _serverReader.getFrameData();
 
@@ -96,12 +93,23 @@ void SHClientWidget::onFrameIsReady()
         // read image
         if (dynamic_cast<SHQImage *>(queryPtr) != nullptr)
         {
-//            return; // !!!!!!!!!
-
             SHQImage *imageQPtr = dynamic_cast<SHQImage *>(queryPtr);
             _shContentPtr->getFileList()[imageQPtr->getFileId()]
                     ->setPixmap(imageQPtr->getImagePtr());
         }
+
+        // if there is image request
+        if (dynamic_cast<SHQImageRequest *>(queryPtr) != nullptr)
+        {
+            SHQImageRequest *requestPtr = dynamic_cast<SHQImageRequest *>(queryPtr);
+            SHQImage answer;
+
+            answer.setFileId(requestPtr->getFileId());
+            answer.setImagePtr(_shContentPtr->getFileList()[requestPtr->getFileId()]->getImage());
+
+            _serverReader.writeData(answer.toQByteArray());
+        }
+
     }
     catch (SHException exc)
     {
@@ -117,10 +125,51 @@ void SHClientWidget::onFrameIsReady()
 }
 
 
+void SHClientWidget::connectToServer()
+{
+    if (_serverReader.getSocketPtr() != nullptr)
+    {
+        _serverReader.getSocketPtr()->close();
+        delete _serverReader.getSocketPtr();
+    }
+
+    if (_browserWidget != nullptr)
+        delete _browserWidget;
+
+    if (_searcherWidget != nullptr)
+        delete _searcherWidget;
+
+    if (_printerWidget != nullptr)
+        delete _printerWidget;
+
+    // conection...
+    QTcpSocket *socketPtr = new QTcpSocket();
+    _serverReader = FrameReader(socketPtr);
+
+    socketPtr->connectToHost(QHostAddress(_settings.getServerHost()), 4321);
+    socketPtr->waitForConnected();
+
+    if (socketPtr->state() == QTcpSocket::ConnectedState)
+        ;
+    else
+        qDebug() << "Connection error:" << socketPtr->errorString();
+}
+
+
+void SHClientWidget::onContentEdited()
+{
+//    qDebug() << "Content edited";
+
+    SHQContent query;
+    query.setFileList(_shContentPtr->getFileList());
+    query.setRootFolderPtr(_shContentPtr->getRootFolder());
+
+    _serverReader.writeData(query.toQByteArray());
+}
+
+
 void SHClientWidget::onCurrFolderChanged()
 {
-//    qDebug() << "Current folder changed";
-
     // request images for files in current folder
     FolderItem *folderPtr = _browserWidget->getCurrFolder();
 
@@ -131,11 +180,6 @@ void SHClientWidget::onCurrFolderChanged()
             query.setFileId(_shContentPtr->getFileList().indexOf(fileItemPtr->getFilePtr()));
 
             _serverReader.writeData(query.toQByteArray());
-
-//            _serverSocket.write(query.toQByteArray());
-//            return;
-
-//            qDebug() << _shContentPtr->getFileList().indexOf(fileItemPtr->getFilePtr());
         }
 }
 
@@ -147,13 +191,36 @@ StudentHelperContent *SHClientWidget::getSHContentPtr() const
 }
 
 
+
 void SHClientWidget::setSHContentPtr(StudentHelperContent *shContentPtr)
 {
+    shContentPtr->getRootFolder()->setName("Все разделы");
+
     _shContentPtr = shContentPtr;
     _browserWidget = new FileBrowserWidget(_shContentPtr->getRootFolder());
     _browserWidget->setEdittingEnabled(true);
     _browserWidget->setPrintEnabled(true);
     ui->fileTab->layout()->addWidget(_browserWidget);
 
-    initiaize();
+    _searcherWidget = new SearcherWidget(NULL, _shContentPtr);
+    clearLayout(ui->searchTab->layout());
+    ui->searchTab->layout()->addWidget(_searcherWidget);
+
+    _printerWidget = new PrinterWidget(NULL, _shContentPtr);
+    clearLayout(ui->printTab->layout());
+    ui->printTab->layout()->addWidget(_printerWidget);
+
+    connect(_browserWidget,     SIGNAL(tagClicked(QString)),
+            _searcherWidget,    SLOT(tagSearchInit(QString)) );
+    connect(_browserWidget, SIGNAL(tagClicked(QString)),
+            this,           SLOT(openSearchTab()) );
+
+    connect(_browserWidget, SIGNAL(currFolderChanged()),
+            this,           SLOT(onCurrFolderChanged()));
+
+    connect(_shContentPtr,  SIGNAL(contentEdited()),
+            this,           SLOT(onContentEdited()));
+
+    onCurrFolderChanged();
 }
+
