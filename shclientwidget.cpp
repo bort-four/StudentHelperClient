@@ -37,6 +37,17 @@ SHClientWidget::SHClientWidget(QWidget *parent)
     connect(ui->cacheSizeSlider,    SIGNAL(valueChanged(int)),
             &_settings,             SLOT(setMaxCacheSize(int)));
 
+    /*
+<<<<<<< HEAD
+=======
+    connect(_browserWidget,     SIGNAL(printRequested(File*)),
+            _shContentPtr,      SIGNAL(sendToPrint(File*))   );
+    connect(_browserWidget,     SIGNAL(tagClicked(QString)),
+            _searcherWidget,    SLOT(tagSearchInit(QString)) );
+    connect(_browserWidget, SIGNAL(tagClicked(QString)),
+            this,           SLOT(openSearchTab()) );
+>>>>>>> c00f00b6008fefd71678917ffb69d62d062f0fa1
+    */
 
     connect(ui->connectButton,  SIGNAL(clicked()),
             this,               SLOT(connectToServer()));
@@ -210,6 +221,8 @@ void SHClientWidget::setSHContentPtr(StudentHelperContent *shContentPtr)
     clearLayout(ui->printTab->layout());
     ui->printTab->layout()->addWidget(_printerWidget);
 
+    connect(_browserWidget,     SIGNAL(printRequested(File*)),
+            _shContentPtr,      SIGNAL(sendToPrint(File*))   );
     connect(_browserWidget,     SIGNAL(tagClicked(QString)),
             _searcherWidget,    SLOT(tagSearchInit(QString)) );
     connect(_browserWidget, SIGNAL(tagClicked(QString)),

@@ -6,10 +6,12 @@
 #include <QPrintPreviewDialog>
 #include "printcompositor.h"
 
-PrinterWidget::PrinterWidget(QWidget *parent, StudentHelperContent *h_data) :
+PrinterWidget::PrinterWidget(QWidget *parent, StudentHelperContent *h_data,
+                             SHCache *cache) :
     QWidget(parent),
     ui(new Ui::PrinterWidget),
-    helper_data(h_data)
+    helper_data(h_data),
+    system_cache(cache)
 {
     ui->setupUi(this);
 
@@ -82,6 +84,7 @@ void PrinterWidget::addToQueue(File* fPtr)
     {
         return;
     }
+
     const QString& name = fPtr->getName();
 //    QString path = fPtr->getFullName();
     QString path = fPtr->getName();
@@ -94,7 +97,10 @@ void PrinterWidget::addToQueue(File* fPtr)
     item->setData(3,path);
     item->setFlags( item->flags() | Qt::ItemIsUserCheckable);
     item->setCheckState(Qt::Unchecked);
-    addCurrentState(path, *fPtr->getImage());
+
+    QPixmap* pix = system_cache->getPixmap(fPtr);
+//    addCurrentState(path, *fPtr->getImage());
+    addCurrentState(path, *pix);
 }
 
 int PrinterWidget::insertToTable(const QString& key)
@@ -508,7 +514,9 @@ void PrinterWidget::deleteSelectedItems()
 void PrinterWidget::selectAll()
 {
     if (ui->print_list->count() == 0)
+    {
         return;
+    }
 
     Qt::CheckState status1, status2;
     QPushButton* pb = ui->selection_button;
@@ -547,10 +555,14 @@ QList<QPixmap*>& PrinterWidget::getSelectedPixes()
         {
             QMap<QString,QPixmap*>::iterator it = current_states->find(item->data(3).toString());
             if (it == current_states->end())
+            {
                 continue;
+            }
             QPixmap* pix = it.value();
             if (pix == NULL)
+            {
                 continue;
+            }
             pixes_to_print.append(pix);
         }
     }

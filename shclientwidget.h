@@ -10,6 +10,7 @@
 #include "searcherwidget.h"
 #include "printerwidget.h"
 #include "shclientsettings.h"
+#include "cachingbase.h"
 #include "../StudentHelperServer/studenthelpercontent.h"
 #include "../StudentHelperServer/shquery.h"
 
@@ -48,7 +49,7 @@ private:
 
     SHClientSettings _settings;
     FrameReader _serverReader;
-
+    SHCache* _shCache;
 };
 
 

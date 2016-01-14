@@ -24,7 +24,8 @@ SOURCES += main.cpp\
     printcompositor.cpp \
     printerwidget.cpp \
     shclientwidget.cpp \
-    shclientsettings.cpp
+    shclientsettings.cpp \
+    cachingbase.cpp
 
 HEADERS  += mainwindow.h\
         ../StudentHelperServer/shquery.h \
@@ -37,7 +38,8 @@ HEADERS  += mainwindow.h\
     printerwidget.h \
     printcompositor.h \
     shclientwidget.h \
-    shclientsettings.h
+    shclientsettings.h \
+    cachingbase.h
 
 FORMS    += mainwindow.ui \
     filedialog.ui \
