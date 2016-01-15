@@ -52,11 +52,17 @@ SHClientWidget::SHClientWidget(QWidget *parent)
     connect(ui->connectButton,  SIGNAL(clicked()),
             this,               SLOT(connectToServer()));
 
-
     _settings.restoreSettings();
 
 
-    // ////
+    _shCache = new SHCache(_settings.getMaxCacheSize());
+
+    connect(ui->cacheSizeSlider, SIGNAL(valueChanged(int)),
+            _shCache,            SLOT(changeSize(int)));
+    connect(ui->cacheCleanButton, SIGNAL(clicked(bool)),
+            _shCache,             SLOT(clean()));
+
+
     ui->searchTab->setLayout(new QHBoxLayout);
     ui->printTab->setLayout(new QHBoxLayout);
 
@@ -105,8 +111,9 @@ void SHClientWidget::onFrameIsReady()
         if (dynamic_cast<SHQImage *>(queryPtr) != nullptr)
         {
             SHQImage *imageQPtr = dynamic_cast<SHQImage *>(queryPtr);
-            _shContentPtr->getFileList()[imageQPtr->getFileId()]
-                    ->setPixmap(imageQPtr->getImagePtr());
+            File* file = _shContentPtr->getFileList()[imageQPtr->getFileId()];
+            file->setPixmap(imageQPtr->getImagePtr());
+            _shCache->add(file);
         }
 
         // if there is image request
@@ -187,10 +194,20 @@ void SHClientWidget::onCurrFolderChanged()
     for (auto fileItemPtr : folderPtr->getFiles())
         if (fileItemPtr->getFilePtr()->getImage() == nullptr)
         {
-            SHQImageRequest query;
-            query.setFileId(_shContentPtr->getFileList().indexOf(fileItemPtr->getFilePtr()));
+            QString id = fileItemPtr->getFilePtr()->getUuid();
+            QPixmap* pix = _shCache->get(id);
+            if (pix != NULL)
+            {
+                int index = _shContentPtr->getFileList().indexOf(fileItemPtr->getFilePtr());
+                _shContentPtr->getFileList()[index]->setPixmap(pix);
+            }
+            else
+            {
+                SHQImageRequest query;
+                query.setFileId(_shContentPtr->getFileList().indexOf(fileItemPtr->getFilePtr()));
 
-            _serverReader.writeData(query.toQByteArray());
+                _serverReader.writeData(query.toQByteArray());
+            }
         }
 }
 

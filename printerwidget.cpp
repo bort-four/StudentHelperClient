@@ -98,9 +98,7 @@ void PrinterWidget::addToQueue(File* fPtr)
     item->setFlags( item->flags() | Qt::ItemIsUserCheckable);
     item->setCheckState(Qt::Unchecked);
 
-    QPixmap* pix = system_cache->getPixmap(fPtr);
-//    addCurrentState(path, *fPtr->getImage());
-    addCurrentState(path, *pix);
+    addCurrentState(path, *fPtr->getImage());
 }
 
 int PrinterWidget::insertToTable(const QString& key)

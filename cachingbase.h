@@ -1,6 +1,7 @@
 #ifndef CACHINGBASE
 #define CACHINGBASE
 
+#include <QObject>
 #include <QDir>
 #include <QFile>
 #include <QPixmap>
@@ -9,58 +10,37 @@
 #include "../StudentHelperServer/studenthelpercontent.h"
 
 
-// Class providing methods for access
-// to server database through local cache.
-class SHCache
+// Class providing methods for local cache service
+class SHCache : public QObject
 {
+    Q_OBJECT
+
 private:
-    int getRecordsCount();
-
-    quint64 getMaxID();
-
-    int contains(const QString& name);
-
-    QPixmap* get(const QString &name);
-
-    QString getFormat(const QString& name);
+    int getMemoryValue();
 
     void removeOldest();
 
-    void newRecord(const QString& name);
-
-    void remove(const QString& name);
-
 public:
-    SHCache(int max_size, StudentHelperContent* content, FrameReader *reader);
+    SHCache(int max_size);
 
-    // Try to find file in cache, if no then download this file,
-    // put it to cache, and return.
-    QPixmap *getPixmap(const File* file);
+    // Try to find file in cache.
+    QPixmap *get(const QString& file_id);
 
-    // Delete file from cache if there,
-    // and send deliting query to server.
-    void deletePixmap(FileItem *file_item);
+    // Add file to cache.
+    void add(const File* file);
 
-    void resetReader(FrameReader* new_reader);
+public slots:
+    void changeSize(int sizeMB);
+
+    void clean();
 
 private:
 
     // Count of currently stored images.
-    int m_counter;
+    int m_mem_counter;
 
-    // ID counter
-    quint64 m_id_counter;
-
-    // Maximum count of stored images.
-    int m_limit;
-
-    // File containing information about stored data.
-    QFile m_cache_info;
-
-    FrameReader* m_reader;
-
-    // Pointer to object containing metadata of database.
-    StudentHelperContent* m_content;
+    // Memory limit for stored images.
+    int m_mem_limit;
 };
 
 #endif // CACHINGBASE
