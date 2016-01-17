@@ -2,6 +2,8 @@
 #include <QStandardItemModel>
 #include <QLabel>
 #include <QHostAddress>
+#include <QMessageBox>
+#include <QAbstractSocket>
 
 #include "shclientwidget.h"
 #include "ui_shclientwidget.h"
@@ -37,18 +39,6 @@ SHClientWidget::SHClientWidget(QWidget *parent)
     connect(ui->cacheSizeSlider,    SIGNAL(valueChanged(int)),
             &_settings,             SLOT(setMaxCacheSize(int)));
 
-    /*
-<<<<<<< HEAD
-=======
-    connect(_browserWidget,     SIGNAL(printRequested(File*)),
-            _shContentPtr,      SIGNAL(sendToPrint(File*))   );
-    connect(_browserWidget,     SIGNAL(tagClicked(QString)),
-            _searcherWidget,    SLOT(tagSearchInit(QString)) );
-    connect(_browserWidget, SIGNAL(tagClicked(QString)),
-            this,           SLOT(openSearchTab()) );
->>>>>>> c00f00b6008fefd71678917ffb69d62d062f0fa1
-    */
-
     connect(ui->connectButton,  SIGNAL(clicked()),
             this,               SLOT(connectToServer()));
 
@@ -65,6 +55,7 @@ SHClientWidget::SHClientWidget(QWidget *parent)
 
     ui->searchTab->setLayout(new QHBoxLayout);
     ui->printTab->setLayout(new QHBoxLayout);
+    ui->connectionLabel->setVisible(false);
 
     connect(&_serverReader, SIGNAL(hasReadyFrame()),
             this,           SLOT(onFrameIsReady()));
@@ -164,26 +155,47 @@ void SHClientWidget::connectToServer()
     QTcpSocket *socketPtr = new QTcpSocket();
     _serverReader = FrameReader(socketPtr);
 
-    socketPtr->connectToHost(QHostAddress(_settings.getServerHost()), 4321);
-    socketPtr->waitForConnected();
+    connect(socketPtr,  SIGNAL(error(QAbstractSocket::SocketError)),
+            this,       SLOT(onSocketError(QAbstractSocket::SocketError)));
 
-    if (socketPtr->state() == QTcpSocket::ConnectedState)
-        ;
-    else
-        qDebug() << "Connection error:" << socketPtr->errorString();
+    connect(socketPtr,  SIGNAL(connected()),
+            this,       SLOT(onSocketConnected()));
+
+    socketPtr->connectToHost(QHostAddress(_settings.getServerHost()), 4321);
+
+    ui->connectionLabel->setVisible(true);
+}
+
+
+void SHClientWidget::onSocketConnected()
+{
+    ui->connectionLabel->setVisible(false);
+}
+
+
+void SHClientWidget::onSocketError(QAbstractSocket::SocketError /*error*/)
+{
+    ui->connectionLabel->setVisible(false);
+
+    QTcpSocket *socketPtr = dynamic_cast<QTcpSocket *>(sender());
+    if (socketPtr == nullptr)
+        return;
+
+    QMessageBox::warning(this, "Ошибка соединения", socketPtr->errorString());
+
+    ui->tabWidget->setCurrentIndex(3);
 }
 
 
 void SHClientWidget::onContentEdited()
 {
-//    qDebug() << "Content edited";
-
     SHQContent query;
     query.setFileList(_shContentPtr->getFileList());
     query.setRootFolderPtr(_shContentPtr->getRootFolder());
 
     _serverReader.writeData(query.toQByteArray());
 }
+
 
 
 void SHClientWidget::onCurrFolderChanged()

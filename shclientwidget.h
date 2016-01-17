@@ -39,6 +39,8 @@ private slots:
     void onFrameIsReady();
     void connectToServer();
     void onContentEdited();
+    void onSocketConnected();
+    void onSocketError(QAbstractSocket::SocketError error);
 
 private:
     Ui::SHClientWidget *ui;
